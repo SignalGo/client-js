@@ -21,7 +21,7 @@ SignalGo is a library for Cross-Platform developers that makes it incredibly sim
 
 and other fetures...
 
-###Quick JavaScript Client-Side:
+###Quick Usage JavaScript Client-Side:
 
 ```js
     function Test() {
