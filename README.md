@@ -62,6 +62,4 @@ I welcome all pull requests from you guys.Here are 3 basic rules of your request
 # Maintained By
 [Seyed Abbas Seyedi](https://github.com/seyedabbasseyedi)
 
-[Ali Yousefi](https://github.com/hamishebahar)
-
-[Blog](http://framesoft.ir)
+[Ali Yousefi](https://github.com/hamishebahar)[Blog](http://framesoft.ir)
