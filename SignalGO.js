@@ -125,11 +125,6 @@ function ClientProvider() {
         var json = JSON.stringify(list);
         var bytes = toUTF16Array(json);
         var bytesOfLen = Int32ToByteArray(bytes.length);
-        var bytearray = new Uint8Array(4);
-        for (var i = 0; i < 4; i++) {
-            bytearray[i] = bytesOfLen[i];
-        }
-        socket.send(bytearray.buffer);
         var bytearray = new Uint8Array(bytes.length);
 
         for (var i = 0; i < bytes.length; i++) {
@@ -220,12 +215,6 @@ function ClientProvider() {
         bytearray[0] = 0;
         socket.send(bytearray.buffer);
 
-        bytearray = new Uint8Array(4);
-        for (var i = 0; i < 4; i++) {
-            bytearray[i] = bytesOfLen[i];
-        }
-        socket.send(bytearray.buffer);
-
         var bytearray = new Uint8Array(jsonBytes.length);
 
         for (var i = 0; i < jsonBytes.length; i++) {
@@ -243,12 +232,6 @@ function ClientProvider() {
 
         var bytearray = new Uint8Array(1);
         bytearray[0] = 0;
-        socket.send(bytearray.buffer);
-
-        bytearray = new Uint8Array(4);
-        for (var i = 0; i < 4; i++) {
-            bytearray[i] = bytesOfLen[i];
-        }
         socket.send(bytearray.buffer);
 
         var bytearray = new Uint8Array(jsonBytes.length);
