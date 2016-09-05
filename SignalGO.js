@@ -123,14 +123,7 @@ function ClientProvider() {
         var list = new Array();
         list.push(url);
         var json = JSON.stringify(list);
-        var bytes = toUTF16Array(json);
-        var bytesOfLen = Int32ToByteArray(bytes.length);
-        var bytearray = new Uint8Array(bytes.length);
-
-        for (var i = 0; i < bytes.length; i++) {
-            bytearray[i] = bytes[i];
-        }
-        socket.send(bytearray.buffer);
+        socket.send(json);
     };
 
     this.RegisterService = function (serviceName, completeAction) {
@@ -205,8 +198,7 @@ function ClientProvider() {
     this.SendCallbackToServer = function (returnValue,guid) {
         var callBackInfo = { Guid: guid, Data: returnValue };
         var json = JSON.stringify(callBackInfo);
-        var jsonBytes = toUTF16Array(json);
-        var bytesOfLen = Int32ToByteArray(jsonBytes.length);
+		
         var bytearray = new Uint8Array(1);
         bytearray[0] = 2;
         socket.send(bytearray.buffer);
@@ -215,17 +207,11 @@ function ClientProvider() {
         bytearray[0] = 0;
         socket.send(bytearray.buffer);
 
-        var bytearray = new Uint8Array(jsonBytes.length);
-
-        for (var i = 0; i < jsonBytes.length; i++) {
-            bytearray[i] = jsonBytes[i];
-        }
-        socket.send(bytearray.buffer);
+        
+        socket.send(json);
     }
     this.CallServerMethod = function (methodCalInfo) {
         var json = JSON.stringify(methodCalInfo);
-        var jsonBytes = toUTF16Array(json);
-        var bytesOfLen = Int32ToByteArray(jsonBytes.length);
         var bytearray = new Uint8Array(1);
         bytearray[0] = 1;
         socket.send(bytearray.buffer);
@@ -234,12 +220,7 @@ function ClientProvider() {
         bytearray[0] = 0;
         socket.send(bytearray.buffer);
 
-        var bytearray = new Uint8Array(jsonBytes.length);
-
-        for (var i = 0; i < jsonBytes.length; i++) {
-            bytearray[i] = jsonBytes[i];
-        }
-        socket.send(bytearray.buffer);
+        socket.send(json);
     }
 }
 
