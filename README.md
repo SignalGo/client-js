@@ -41,7 +41,18 @@ and other fetures...
 }
 
 ```
+##Install package from nuget:
 
+Install-Package SignalGo.JavaScript.Client
+
+
+# Pull Requests
+I welcome all pull requests from you guys.Here are 3 basic rules of your request:
+  1. Match coding style (braces, spacing, etc.)
+  2. If its a feature, bugfix, or anything please only change code to what you specify.
+  3. Please keep PR titles easy to read and descriptive of changes, this will make them easier to merge :)
+
+  
 ## Other source on github
   1. [.Net Framework Client Side](https://github.com/SignalGo/client-net)
   2. [.Net Framework Server side](https://github.com/SignalGo/server-net)
@@ -50,6 +61,5 @@ and other fetures...
 
 # Maintained By
 [Seyed Abbas Seyedi](https://github.com/seyedabbasseyedi)
-[Ali Yousefi](https://github.com/hamishebahar)
 
-[Blog](http://framesoft.ir)
+[Ali Yousefi](https://github.com/hamishebahar) [Blog](http://framesoft.ir)
