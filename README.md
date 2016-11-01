@@ -56,7 +56,7 @@ I welcome all pull requests from you guys.Here are 3 basic rules of your request
 ## Other source on github
   1. [.Net Framework Client Side](https://github.com/SignalGo/client-net)
   2. [.Net Framework Server side](https://github.com/SignalGo/server-net)
-  3. [Java Client](https://github.com/SignalGo/server-net)
+  3. [Java Client](https://github.com/SignalGo/client-java)
   
 
 # Maintained By
