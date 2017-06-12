@@ -81,13 +81,14 @@ function toAbsoluteURL(url) {
 
 //class for web socket
 function ClientProvider() {
-  var socket;
-  var listOfMethodCallGuids;
-  var listOfServices;
-  var listOfCallbackServices;
-  var segments = {};
+  var self= this, 
+      socket,
+      listOfMethodCallGuids,
+      listOfServices,
+      listOfCallbackServices,
+      segments = {};
 
-  this.Connect = function (url, provider, onRegister, onError, onClose) {
+  this.Connect = function (url, onRegister, onError, onClose) {
     var result = toAbsoluteURL(url);
     //console.log(url);
     //console.log(result.absoluteUrl);
@@ -98,7 +99,7 @@ function ClientProvider() {
     socket.binaryType = "arraybuffer";
     socket.onopen = function () {
       // Web Socket is connected, send data using send()
-      provider.ConnectData(result.absoluteUrl);
+      self.ConnectData(result.absoluteUrl);
       onRegister();
     };
 
@@ -107,7 +108,7 @@ function ClientProvider() {
     };
 
     socket.onmessage = function (evt) {
-      provider.GenerateResponseCall(evt.data);
+      self.GenerateResponseCall(evt.data);
     };
 
     socket.onclose = function (m) {
