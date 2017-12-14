@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="SignalGO.js"></script>
+</head>
+<body>
+    <h1>SignalGO Tester</h1>
+    <script>
+        var provider = new ClientProvider();
+        var service;
+        provider.Connect('ws://localhost:6479/TestServices/SignalGo', provider, function () {
+            provider.RegisterService('TestService', ['LoginUser', 'TakeWebToken', 'otherMetods'], function (s) {
+                service = s;
+                service.LoginUser("usernameParameter", "passwordParameter", function (x) {
+                    console.log(x);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

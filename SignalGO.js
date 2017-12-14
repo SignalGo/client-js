@@ -88,7 +88,7 @@ function ClientProvider() {
   var ping_pong_interval = null;
   var missed_ping_pongs = 0;
 
-  this.Connect = function (url, provider, onRegister, onError, onClose, enablePingPong = false, pingPongTime = 3000) {
+  this.Connect = function (url, provider, onConnect, onError, onClose, enablePingPong = false, pingPongTime = 3000) {
     var result = toAbsoluteURL(url);
     //console.log(url);
     //console.log(result.absoluteUrl);
@@ -100,7 +100,12 @@ function ClientProvider() {
     socket.onopen = function () {
       // Web Socket is connected, send data using send()
       provider.ConnectData(result.absoluteUrl);
-      onRegister();
+      
+      // if(connectionSettings) {
+      //   connectionSettings.runPriorityFunctions();
+      // }
+
+      onConnect();
 
       // ping-pong
       if (ping_pong_interval === null && enablePingPong) {
@@ -154,19 +159,19 @@ function ClientProvider() {
     socket.send(json);
   };
 
-  this.RegisterService = function (serviceName, completeAction) {
+  this.RegisterService = function (serviceName, functionNames, completeAction) {
     var call = GenerateCallInfo(generateUUID(), serviceName, "/RegisterService", null, null);
     var provider = this;
     listOfServices[serviceName] = {
-      Send: function () {
-        var methodName = arguments[0];
+      _SignalGoSend: function (items) {
+        var methodName = items[0];
         var params = new Array();
-        for (i = 1; i < arguments.length; i++) {
+        for (i = 1; i < items.length; i++) {
           var obj = new Object();
-          if (isFunction(arguments[i]))
+          if (isFunction(items[i]))
             break;
-          if (arguments[i] != null)
-            obj.Value = JSON.stringify(arguments[i]);
+          if (items[i] != null)
+            obj.Value = JSON.stringify(items[i]);
           params.push(obj);
         }
         var call = GenerateCallInfo(generateUUID(), serviceName, methodName, null, params);
@@ -176,11 +181,25 @@ function ClientProvider() {
           isRegister: false,
           serviceName: serviceName
         };
-        if (isFunction(arguments[arguments.length - 1]))
-          listOfMethodCallGuids[call.Guid].func = arguments[arguments.length - 1];
+        if (isFunction(items[items.length - 1]))
+          listOfMethodCallGuids[call.Guid].func = items[items.length - 1];
         provider.CallServerMethod(call);
       }
     };
+
+    for(var i = 0; i < functionNames.length; i++) {
+      listOfServices[serviceName][functionNames[i]] = function() {
+        // arguments.unshift(functionNames[i]);
+        var args = [];
+        args[0] = arguments.callee.fname;
+        for (var j = 0; j < arguments.length; ++j) args[j+1] = arguments[j];
+        listOfServices[serviceName]._SignalGoSend(args);
+      }
+      listOfServices[serviceName][functionNames[i]].fname = functionNames[i];
+    }
+
+
+
     listOfServices[serviceName].ServiceName = serviceName;
     listOfMethodCallGuids[call.Guid] = {
       call: call,
@@ -388,3 +407,23 @@ function GenerateParameter(value) {
   parameterInfo.Value = value;
   return parameterInfo;
 }
+
+
+
+
+
+// function ConnectionSettings() {
+//   var priorityFunctions = [];
+//   this.addPriorityFunction = function(funcName, callback) {
+//     this.priorityFunctions.push({
+//       'func': funcName,
+//       'callback':
+//     });
+//   }
+
+//   this.runPriorityFunctions = function() {
+//     for(var i = 0; i < this.priorityFunctions.length; i++) {
+//       this.priorityFunctions[i]();
+//     }
+//   }
+// }
