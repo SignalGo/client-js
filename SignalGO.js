@@ -35,12 +35,10 @@ function toUTF16Array(str) {
   }
 
   var buffer = Array.from(bufView);
-  for (var i = 0; i < buffer.length; i++) {
-  }
   return buffer;
 }
 
-function Int32ToByteArray(/*long*/long) {
+function Int32ToByteArray( /*long*/ long) {
   // we want to represent the input as a 8-bytes array
   var byteArray = [0, 0, 0, 0];
 
@@ -53,7 +51,7 @@ function Int32ToByteArray(/*long*/long) {
   return byteArray;
 };
 
-function byteArrayToInt32(/*byte[]*/byteArray) {
+function byteArrayToInt32( /*byte[]*/ byteArray) {
   var value = 0;
   for (var i = byteArray.length - 1; i >= 0; i--) {
     value = (value * 256) + byteArray[i];
@@ -63,9 +61,9 @@ function byteArrayToInt32(/*byte[]*/byteArray) {
 };
 //--> example url:"ws://192.168.10.27:5648/FamilyDeskServices"
 function toAbsoluteURL(url) {
-  var splitUrl = url.split(":");//--> ws , //192.168.10.27 , 5648/FamilyDeskServices
-  var urlPart3 = splitUrl[splitUrl.length - 1];//--> 5648/FamilyDeskServices
-  var pathUrl = urlPart3.substring(urlPart3.indexOf("/"));//-->/FamilyDeskServices
+  var splitUrl = url.split(":");
+  var urlPart3 = splitUrl[splitUrl.length - 1];
+  var pathUrl = urlPart3.substring(urlPart3.indexOf("/"));
 
   this.absoluteUrl = pathUrl;
   var lastPointPosition = url.lastIndexOf(":");
@@ -85,9 +83,12 @@ function ClientProvider() {
   var listOfMethodCallGuids;
   var listOfServices;
   var listOfCallbackServices;
+  var isSendingPartialData;
   var segments = {};
+  var ping_pong_interval = null;
+  var missed_ping_pongs = 0;
 
-  this.Connect = function (url, provider, onRegister, onError, onClose) {
+  this.Connect = function (url, provider, onRegister, onError, onClose, enablePingPong = false, pingPongTime = 3000) {
     var result = toAbsoluteURL(url);
     //console.log(url);
     //console.log(result.absoluteUrl);
@@ -100,6 +101,31 @@ function ClientProvider() {
       // Web Socket is connected, send data using send()
       provider.ConnectData(result.absoluteUrl);
       onRegister();
+
+      // ping-pong
+      if (ping_pong_interval === null && enablePingPong) {
+        missed_ping_pongs = 0;
+        ping_pong_interval = setInterval(function () {
+          if (isSendingPartialData) return;
+          try {
+            missed_ping_pongs++;
+            if (missed_ping_pongs >= 3)
+              throw new Error("Too many missed ping_pongs.");
+
+            var bytearray = new Uint8Array(1);
+            bytearray[0] = 5;
+            socket.send(bytearray.buffer);
+          } catch (e) {
+            clearInterval(ping_pong_interval);
+            ping_pong_interval = null;
+            var tempOnClose = socket.onclose;
+            socket.onclose = function () { };
+            socket.close();
+            tempOnClose();
+            console.warn("Connection Closed. Reason: " + e.message);
+          }
+        }, pingPongTime);
+      }
     };
 
     socket.onerror = function (error) {
@@ -107,7 +133,12 @@ function ClientProvider() {
     };
 
     socket.onmessage = function (evt) {
-      provider.GenerateResponseCall(evt.data);
+      if (evt.data.length == 1 && evt.data.charCodeAt(0) == 5) {
+        missed_ping_pongs = 0;
+      }
+      else {
+        provider.GenerateResponseCall(evt.data);
+      }
     };
 
     socket.onclose = function (m) {
@@ -126,8 +157,7 @@ function ClientProvider() {
   this.RegisterService = function (serviceName, completeAction) {
     var call = GenerateCallInfo(generateUUID(), serviceName, "/RegisterService", null, null);
     var provider = this;
-    listOfServices[serviceName] =
-    {
+    listOfServices[serviceName] = {
       Send: function () {
         var methodName = arguments[0];
         var params = new Array();
@@ -140,14 +170,24 @@ function ClientProvider() {
           params.push(obj);
         }
         var call = GenerateCallInfo(generateUUID(), serviceName, methodName, null, params);
-        listOfMethodCallGuids[call.Guid] = { call: call, func: null, isRegister: false, serviceName: serviceName };
+        listOfMethodCallGuids[call.Guid] = {
+          call: call,
+          func: null,
+          isRegister: false,
+          serviceName: serviceName
+        };
         if (isFunction(arguments[arguments.length - 1]))
           listOfMethodCallGuids[call.Guid].func = arguments[arguments.length - 1];
         provider.CallServerMethod(call);
       }
     };
     listOfServices[serviceName].ServiceName = serviceName;
-    listOfMethodCallGuids[call.Guid] = { call: call, func: completeAction, isRegister: true, serviceName: serviceName };
+    listOfMethodCallGuids[call.Guid] = {
+      call: call,
+      func: completeAction,
+      isRegister: true,
+      serviceName: serviceName
+    };
     this.CallServerMethod(call);
   }
 
@@ -162,6 +202,8 @@ function ClientProvider() {
   }
 
   this.GenerateResponseCall = function (data) {
+    if (isSendingPartialData) isSendingPartialData = false;
+
     var dataType = data.substring(0, data.indexOf("/"));
     var splitDataType = dataType.split(",");
     if (splitDataType[0] == 2) {
@@ -185,8 +227,7 @@ function ClientProvider() {
       listOfMethodCallGuids[obj.Guid] = null;
 
 
-    }
-    else if (splitDataType[0] == 1) {
+    } else if (splitDataType[0] == 1) {
       var json = data.substring(data.indexOf("/") + 1);
       var obj = JSON.parse(json);
       if (obj.PartNumber != undefined && obj.PartNumber != 0) {
@@ -202,7 +243,9 @@ function ClientProvider() {
           if (method == obj.MethodName) {
             var params = new Array();
             for (var i = 0; i < obj.Parameters.length; i++) {
-              params.push(JSON.parse(obj.Parameters[i].Value))
+              try {
+                params.push(JSON.parse(obj.Parameters[i].Value))
+              } catch (e) { }
             }
             var result = service[method].apply(this, params);
 
@@ -215,32 +258,33 @@ function ClientProvider() {
   }
 
   this.GenerateAndMixSegments = function (data) {
-      this.AddToSegments(data);
-      if (data.PartNumber == -1)
-      {
-        var result = JSON.parse(JSON.stringify(data));
-        var resultData = "";
-        for (var i = 0; i < segments[data.Guid].length; i++) {
-          resultData += segments[data.Guid][i].Data;
-        }
-        result.Data = resultData;
-        return result;
+    this.AddToSegments(data);
+    if (data.PartNumber == -1) {
+      var result = JSON.parse(JSON.stringify(data));
+      var resultData = "";
+      for (var i = 0; i < segments[data.Guid].length; i++) {
+        resultData += segments[data.Guid][i].Data;
       }
-      return null;
+      result.Data = resultData;
+      return result;
+    }
+    return null;
   }
 
   this.AddToSegments = function (data) {
     if (segments[data.Guid] == null || segments[data.Guid] == undefined) {
       segments[data.Guid] = [];
       segments[data.Guid].push(data);
-    }
-    else {
+    } else {
       segments[data.Guid].push(data);
     }
   }
 
   this.SendCallbackResultToServer = function (returnValue, guid) {
-    var callBackInfo = { Guid: guid, Data: returnValue };
+    var callBackInfo = {
+      Guid: guid,
+      Data: returnValue
+    };
     var jdata = JSON.stringify(callBackInfo);
     if (jdata.length > 30000) {
       var partData = this.GenerateParts(jdata)
@@ -250,16 +294,14 @@ function ClientProvider() {
         var newCall = JSON.parse(JSON.stringify(callBackInfo))
         if (i == partData.length - 1) {
           newCall.PartNumber = -1;
-        }
-        else {
+        } else {
           newCall.PartNumber = i + 1;
         }
         newCall.Data = dataOfPart;
         newCall.Parameters = null;
         this.SendCallbackToServer(newCall);
       }
-    }
-    else {
+    } else {
       this.SendCallbackToServer(callBackInfo);
     }
   }
@@ -296,22 +338,20 @@ function ClientProvider() {
     var jdata = JSON.stringify(methodCalInfo);
     if (jdata.length > 30000) {
       var partData = this.GenerateParts(jdata)
-
+      isSendingPartialData = true;
       for (i = 0; i < partData.length; i++) {
         var dataOfPart = partData[i];
         var newCall = JSON.parse(JSON.stringify(methodCalInfo));
         if (i == partData.length - 1) {
           newCall.PartNumber = -1;
-        }
-        else {
+        } else {
           newCall.PartNumber = i + 1;
         }
         newCall.Data = dataOfPart;
         newCall.Parameters = null;
         this.SendMethodToServer(newCall);
       }
-    }
-    else {
+    } else {
       this.SendMethodToServer(methodCalInfo);
     }
   }
@@ -338,7 +378,7 @@ function GenerateCallInfo(guid, serviceName, methodName, data, parameters) {
   callInfo.Guid = guid;
   callInfo.ServiceName = serviceName;
   callInfo.MethodName = methodName;
-  callInfo.Data = data;//response of function
+  callInfo.Data = data; //response of function
   callInfo.Parameters = parameters;
   return callInfo;
 }
