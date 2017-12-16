@@ -202,15 +202,11 @@ function ClientProvider() {
                 };
                 var isAsync = isFunction(items[items.length - 1]);
                 var userFunction = items[items.length - 1];
-                //if (isAsync)
-                //    listOfMethodCallGuids[call.Guid].func = userFunction ;
-                //else {
-
-                //}
 
                 return new Promise(function (resolve, reject) {
                     listOfMethodCallGuids[call.Guid].func = function (result) {
                         userFunction(result);
+                        currentConnectionSettings.removeStack(call.MethodName);
                         resolve(result);
                     };
                     currentProvider.CallServerMethod(call);
@@ -220,10 +216,12 @@ function ClientProvider() {
 
         for (var i = 0; i < functionNames.length; i++) {
             listOfServices[serviceName][functionNames[i]] = function () {
-                // arguments.unshift(functionNames[i]);
+
                 var args = [];
                 args[0] = arguments.callee.fname;
-                for (var j = 0; j < arguments.length; ++j) args[j + 1] = arguments[j];
+                for (var j = 0; j < arguments.length; ++j)
+                    args[j + 1] = arguments[j];
+                currentConnectionSettings.addStack(args[0], listOfServices[serviceName]._SignalGoSend, args);
                 return listOfServices[serviceName]._SignalGoSend(args);
             }
             listOfServices[serviceName][functionNames[i]].fname = functionNames[i];
@@ -450,6 +448,8 @@ function GenerateParameter(value) {
 
 function ConnectionSettings() {
     var priorityFunctions = [];
+    var stackFunctions = {};
+    var handleDuplicateStack = true;
     this.addPriorityFunction = function (canContinueCallback) {
         //if (canContinueCallback.arguments != undefined && canContinueCallback.arguments.length > 0 && canContinueCallback.arguments[canContinueCallback.arguments.length - 1].isFunction)
         //    throw new Error("cannot use priority functions with async calls,please don't use async calls when addPriorityFunction, just remove callback function in the last argumants of your method");
@@ -460,12 +460,15 @@ function ConnectionSettings() {
     this.runPriorityFunctions = async function () {
         if (priorityFunctions.length == 0)
             return;
+        var setting = this;
         var first = priorityFunctions[0];
         this.runThenFunction(first, function (lastItem) {
             var index = priorityFunctions.indexOf(lastItem);
             index++;
             if (index < priorityFunctions.length)
                 return priorityFunctions[index];
+            else
+                setting.runStacks();
             return null;
         }, this.runThenFunction);
         //first().then(function (result) {
@@ -484,5 +487,30 @@ function ConnectionSettings() {
             if (newfunc != null)
                 thenFun(newfunc, getNewFunc, thenFun);
         });
+    };
+
+    this.addStack = function (funcName, func, args) {
+        if (handleDuplicateStack) {
+            delete stackFunctions[funcName];
+        }
+        var funcData = new function () { };
+        funcData.func = func;
+        funcData.args = args;
+        stackFunctions[funcName] = funcData;
+    };
+
+    this.removeStack = function (funcName) {
+        delete stackFunctions[funcName];
+    };
+
+    this.runStacks = function (func) {
+        for (var key in stackFunctions) {
+            var value = stackFunctions[key];
+            value.func(value.args);
+        }
+        clearStacks();
+    };
+    this.clearStacks = function () {
+        stackFunctions = {};
     };
 }

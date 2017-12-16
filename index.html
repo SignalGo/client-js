@@ -8,30 +8,30 @@
     <script>
         var provider = new ClientProvider();
         var service;
-		var setting = new ConnectionSettings();
-		provider.InitializeConnectionSettings(setting);
-		setting.addPriorityFunction(function() {
-				return provider.RegisterService('HealthFamilyService', ['LoginUser', 'TakeWebToken', 'otherMetods'],function(providerService){
-				service=providerService;
-				});
-		});
-		setting.addPriorityFunction(function() {
-				return service.LoginUser("usernameParameter", "passwordParameter", function (x) {
-                    console.log(x);
-                });
-		});
-		
-		setting.addPriorityFunction(function() {
-				return service.LoginUser("usernameParameter", "passwordParameter", function (x) {
-                    console.log(x);
-					provider.Close();
-                });
-		});
-				
-        provider.Connect('ws://localhost:1122/ServiceName/SignalGo', provider, function () {
-            
+        var setting = new ConnectionSettings();
+        provider.InitializeConnectionSettings(setting);
+        setting.addPriorityFunction(function () {
+            return provider.RegisterService('ServiceName', ['LoginUser', 'TakeWebToken', 'otherMetods'], function (providerService) {
+                service = providerService;
+            });
         });
-		
+        setting.addPriorityFunction(function () {
+            return service.LoginUser("usernameParameter", "passwordParameter", function (x) {
+                console.log(x);
+            });
+        });
+
+        setting.addPriorityFunction(function () {
+            return service.LoginUser("usernameParameter", "passwordParameter", function (x) {
+                console.log(x);
+                provider.Close();
+            });
+        });
+
+        provider.Connect('ws://localhost:1122/ServiceName/SignalGo', provider, function () {
+
+        });
+
     </script>
 </body>
 </html>
