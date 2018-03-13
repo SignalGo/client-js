@@ -162,7 +162,10 @@ function ClientProvider() {
 
         socket.onclose = function (m) {
             if (autoReconnect)
-                provider.Connect(url, provider, onConnect, onError, onClose, enablePingPong, pingPongTime, isAutoReconnect);
+                setTimeout(function () {
+                    provider.Connect(url, provider, onConnect, onError, onClose, enablePingPong, pingPongTime, isAutoReconnect);
+                }, currentConnectionSettings.delayTimeToReconnect);
+
 
             console.log("// websocket is closed.");
             if (onClose != undefined)
@@ -447,6 +450,7 @@ function GenerateParameter(value) {
 
 
 function ConnectionSettings() {
+    this.delayTimeToReconnect = 1000;
     var priorityFunctions = [];
     var stackFunctions = {};
     var handleDuplicateStack = true;
@@ -508,7 +512,10 @@ function ConnectionSettings() {
             var value = stackFunctions[key];
             value.func(value.args);
         }
-        clearStacks();
+        if (typeof clearStacks != 'undefined')
+            clearStacks();
+        else if (typeof this.clearStacks != 'undefined')
+            this.clearStacks();
     };
     this.clearStacks = function () {
         stackFunctions = {};
