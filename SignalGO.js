@@ -7,6 +7,8 @@ function isFunction(functionToCheck) {
     return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
 }
 
+
+
 function getFunctionName(fun) {
     var ret = fun.toString();
     ret = ret.substr('function '.length);
@@ -76,7 +78,37 @@ function toAbsoluteURL(url) {
     this.Url = url.substring(0, endOfOriginUrl);
     return this;
 }
-
+function jsonHelper() {
+    var savedReferences = {};
+    var mappedObjects = [];
+    this.CleanJsonReferences = function (obj) {
+        var type = typeof obj;
+        if (type == "string" || type == "number")
+            return obj;
+        if (mappedObjects.indexOf(obj) >= 0)
+            return obj;
+        mappedObjects.push(obj);
+        if (obj.$id != undefined) {
+            if (obj.$values != undefined) 
+                savedReferences[obj.$id] = obj.$values;
+            else
+                savedReferences[obj.$id] = obj;
+            delete obj.$id;
+        }
+        if (obj.$values != undefined) {
+            obj = obj.$values;
+        }
+        if (obj.$ref != undefined) {
+            obj = savedReferences[obj.$ref];
+            delete obj.$ref;
+        }
+        var properties = Object.getOwnPropertyNames(obj);
+        for (var i = 0; i < properties.length; i++) {
+            obj[properties[i]] = this.CleanJsonReferences(obj[properties[i]]);
+        }
+        return obj; 
+    }
+}
 //class for web socket
 function ClientProvider() {
     var socket;
@@ -270,12 +302,12 @@ function ClientProvider() {
         var splitDataType = dataType.split(",");
         if (splitDataType[0] == 2) {
             var json = data.substring(data.indexOf("/") + 1);
-            var obj = JSON.parse(json);
+            var obj = new jsonHelper().CleanJsonReferences(JSON.parse(json));
             if (obj.PartNumber != undefined && obj.PartNumber != 0) {
 
                 var mix = this.GenerateAndMixSegments(obj);
                 if (mix != null)
-                    obj = JSON.parse(mix.Data);
+                    obj = new jsonHelper().CleanJsonReferences(JSON.parse(mix.Data));
                 else
                     return;
             }
@@ -285,17 +317,17 @@ function ClientProvider() {
             if (call.isRegister !== undefined && call.isRegister)
                 call.func(listOfServices[call.serviceName]);
             else if (call.func != null && obj.Data != null)
-                call.func(JSON.parse(obj.Data));
+                call.func(new jsonHelper().CleanJsonReferences(JSON.parse(obj.Data)));
             listOfMethodCallGuids[obj.Guid] = null;
 
 
         } else if (splitDataType[0] == 1) {
             var json = data.substring(data.indexOf("/") + 1);
-            var obj = JSON.parse(json);
+            var obj = new jsonHelper().CleanJsonReferences(JSON.parse(json));
             if (obj.PartNumber != undefined && obj.PartNumber != 0) {
                 var mix = this.GenerateAndMixSegments(obj);
                 if (mix != null)
-                    obj = JSON.parse(mix.Data);
+                    obj = new jsonHelper().CleanJsonReferences(JSON.parse(mix.Data));
                 else
                     return;
             }
@@ -308,7 +340,7 @@ function ClientProvider() {
                             obj.Parameters = obj.Parameters.$values;
                         for (var i = 0; i < obj.Parameters.length; i++) {
                             try {
-                                params.push(JSON.parse(obj.Parameters[i].Value))
+                                params.push(new jsonHelper().CleanJsonReferences(JSON.parse(obj.Parameters[i].Value)))
                             } catch (e) { }
                         }
                         var result = service[method].apply(this, params);
@@ -324,7 +356,7 @@ function ClientProvider() {
     this.GenerateAndMixSegments = function (data) {
         this.AddToSegments(data);
         if (data.PartNumber == -1) {
-            var result = JSON.parse(JSON.stringify(data));
+            var result = new jsonHelper().CleanJsonReferences(JSON.parse(JSON.stringify(data)));
             var resultData = "";
             for (var i = 0; i < segments[data.Guid].length; i++) {
                 resultData += segments[data.Guid][i].Data;
@@ -355,7 +387,7 @@ function ClientProvider() {
 
             for (i = 0; i < partData.length; i++) {
                 var dataOfPart = partData[i];
-                var newCall = JSON.parse(JSON.stringify(callBackInfo))
+                var newCall = new jsonHelper().CleanJsonReferences(JSON.parse(JSON.stringify(callBackInfo)))
                 if (i == partData.length - 1) {
                     newCall.PartNumber = -1;
                 } else {
@@ -405,7 +437,7 @@ function ClientProvider() {
             isSendingPartialData = true;
             for (i = 0; i < partData.length; i++) {
                 var dataOfPart = partData[i];
-                var newCall = JSON.parse(JSON.stringify(methodCalInfo));
+                var newCall = new jsonHelper().CleanJsonReferences(JSON.parse(JSON.stringify(methodCalInfo)));
                 if (i == partData.length - 1) {
                     newCall.PartNumber = -1;
                 } else {
