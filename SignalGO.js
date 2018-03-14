@@ -123,6 +123,7 @@ function ClientProvider() {
                 missed_ping_pongs = 0;
                 ping_pong_interval = setInterval(function () {
                     if (isSendingPartialData) return;
+
                     try {
                         missed_ping_pongs++;
                         if (missed_ping_pongs >= 3)
@@ -131,6 +132,7 @@ function ClientProvider() {
                         var bytearray = new Uint8Array(1);
                         bytearray[0] = 5;
                         socket.send(bytearray.buffer);
+                        console.warn("sent ping pong");
                     } catch (e) {
                         clearInterval(ping_pong_interval);
                         ping_pong_interval = null;
@@ -145,10 +147,13 @@ function ClientProvider() {
         };
 
         socket.onerror = function (error) {
+            console.error("Connection Error. Reason: " + error);
             if (onError != undefined)
                 onError();
             if (autoReconnect)
-                provider.Connect(url, provider, onConnect, onError, onClose, enablePingPong, pingPongTime, isAutoReconnect);
+                setTimeout(function () {
+                    provider.Connect(url, provider, onConnect, onError, onClose, enablePingPong, pingPongTime, isAutoReconnect);
+                }, currentConnectionSettings.delayTimeToReconnect);
         };
 
         socket.onmessage = function (evt) {
@@ -158,16 +163,17 @@ function ClientProvider() {
             else {
                 currentProvider.GenerateResponseCall(evt.data);
             }
+            return false;
         };
 
-        socket.onclose = function (m) {
+        socket.onclose = function (event) {
             if (autoReconnect)
                 setTimeout(function () {
                     provider.Connect(url, provider, onConnect, onError, onClose, enablePingPong, pingPongTime, isAutoReconnect);
                 }, currentConnectionSettings.delayTimeToReconnect);
 
 
-            console.log("// websocket is closed.");
+            console.error("websocket is closed: " + event.code);
             if (onClose != undefined)
                 onClose();
         };
@@ -298,6 +304,8 @@ function ClientProvider() {
                 if (isFunction(service[method])) {
                     if (method == obj.MethodName) {
                         var params = new Array();
+                        if (obj.Parameters.$values != undefined)
+                            obj.Parameters = obj.Parameters.$values;
                         for (var i = 0; i < obj.Parameters.length; i++) {
                             try {
                                 params.push(JSON.parse(obj.Parameters[i].Value))
