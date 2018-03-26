@@ -6,7 +6,7 @@ signalGo client version for .Net framework
 
 SignalGo is a library for Cross-Platform developers that makes it incredibly simple to add real-time web functionality to your applications. What is "real-time web" functionality? It's the ability to have your server-side code push content to the connected clients as it happens, in real-time. like WCF and SignalR
 
-##Features:
+## Features:
   1. Send and receive any data like class,object,parameters,methods,return types
   2. Return data from a method (client and server)
   3. Support priority system
@@ -14,7 +14,7 @@ SignalGo is a library for Cross-Platform developers that makes it incredibly sim
   5. Auto Reconnect
 and other fetures...
 
-###Quick Usage JavaScript Client-Side:
+### Quick Usage JavaScript Client-Side:
 
 ```js
          var provider = new ClientProvider();
@@ -47,10 +47,10 @@ and other fetures...
 
 ```
 
-Full Sample: 
+# Full Sample: 
 https://github.com/SignalGo/client-js/blob/master/index.html
 
-##Install package from nuget:
+## Install package from nuget:
 
 Install-Package SignalGo.JavaScript.Client
 
