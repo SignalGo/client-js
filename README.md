@@ -17,6 +17,7 @@ and other fetures...
 ### Quick Usage JavaScript Client-Side:
 
 ```js
+<<<<<<< HEAD
          var provider = new ClientProvider();
         var service;
         var setting = new ConnectionSettings();
@@ -41,6 +42,45 @@ and other fetures...
         var callback = provider.RegisterCallbackService("CallbackServiceName");
         callback.ReceivedMessage = function (response) {
             console.log("ReceivedMessage is called: " + response);
+=======
+    function Test() {
+        var provider = new ClientProvider();
+       
+        var setting = new ConnectionSettings();
+
+        provider.InitializeConnectionSettings(setting);
+		var service = provider.RegisterService('HealthFamilyService', ['HelloWorld', 'Sum']);
+		//priority functions always run after connect before call anything
+		//this help you for login method etc
+        setting.addPriorityFunction(function () {
+            return service.HelloWorld("ali", function (x) {
+                console.log("priority: " + x);
+            });
+        });
+        setting.addPriorityFunction(function () {
+            return service.Sum(11, 12, function (x) {
+                console.log("priority: " + x);
+            });
+        });
+
+        provider.Connect('ws://localhost:9752/SignalGoTestService', provider, function () {
+			//after connect
+			//HealthFamilyService is your service name and HelloWorld and Sum is your service methods
+			
+			service.HelloWorld("ali", function (x) {
+					console.log(x);
+			});
+        });
+		
+
+		//HealthFamilyClientService is your client service servicename
+        var callback = provider.RegisterCallbackService("HealthFamilyClientService");
+		//ReceivedMessage is your method name and name , family is your method parameters
+        callback.ReceivedMessage = function (name,family) {
+            console.log("ReceivedMessage is called: name=" + name + " family="+family);
+			//result of your client method to server
+			return "welcome to client method!";
+>>>>>>> 498e21ef8edf097ddb2d4547e3907d052c2a7b1a
         };
 
 }
