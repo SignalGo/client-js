@@ -113,7 +113,7 @@ function jsonHelper() {
 function ClientProvider() {
     var socket;
     var listOfMethodCallGuids;
-    var listOfServices;
+    var listOfServices = {};
     var listOfCallbackServices;
     var isSendingPartialData;
     var segments = {};
@@ -135,7 +135,6 @@ function ClientProvider() {
         //console.log(url);
         //console.log(result.absoluteUrl);
         listOfMethodCallGuids = {};
-        listOfServices = {};
         listOfCallbackServices = {};
         socket = new WebSocket(result.Url);
         socket.binaryType = "arraybuffer";
@@ -146,10 +145,9 @@ function ClientProvider() {
             // if(connectionSettings) {
             //   connectionSettings.runPriorityFunctions();
             // }
-
-            onConnect();
+           
             if (currentConnectionSettings != undefined)
-                currentConnectionSettings.runPriorityFunctions();
+                currentConnectionSettings.runPriorityFunctions(onConnect);
             // ping-pong
             if (ping_pong_interval === null && enablePingPong) {
                 missed_ping_pongs = 0;
@@ -261,9 +259,11 @@ function ClientProvider() {
                 args[0] = arguments.callee.fname;
                 for (var j = 0; j < arguments.length; ++j)
                     args[j + 1] = arguments[j];
+				if (listOfServices[serviceName]._SignalGoSend == undefined)
+					throw new Error('need to connect');
                 currentConnectionSettings.addStack(args[0], listOfServices[serviceName]._SignalGoSend, args);
                 return listOfServices[serviceName]._SignalGoSend(args);
-            }
+            };
             listOfServices[serviceName][functionNames[i]].fname = functionNames[i];
         }
 
@@ -301,7 +301,7 @@ function ClientProvider() {
 
 
             var call = listOfMethodCallGuids[obj.Guid];
-            call.func(listOfServices[call.serviceName]);
+            //call.func(listOfServices[call.serviceName]);
             if (call.func != null && obj.Data != null)
                 call.func(new jsonHelper().CleanJsonReferences(JSON.parse(obj.Data)));
             listOfMethodCallGuids[obj.Guid] = null;
@@ -365,7 +365,7 @@ function ClientProvider() {
     this.SendCallbackResultToServer = function (returnValue, guid) {
         var callBackInfo = {
             Guid: guid,
-            Data: returnValue
+            Data: JSON.stringify(returnValue)
         };
         var jdata = JSON.stringify(callBackInfo);
         if (jdata.length > 30000) {
@@ -487,35 +487,34 @@ function ConnectionSettings() {
         priorityFunctions.push(canContinueCallback);
     }
 
-    this.runPriorityFunctions = async function () {
-        if (priorityFunctions.length == 0)
-            return;
+    this.runPriorityFunctions = function (complete) {
+        if (priorityFunctions.length == 0){
+			complete();
+			return;
+		}
         var setting = this;
         var first = priorityFunctions[0];
-        this.runThenFunction(first, function (lastItem) {
+        this.runThenFunction(first, complete , function (lastItem) {
             var index = priorityFunctions.indexOf(lastItem);
             index++;
             if (index < priorityFunctions.length)
                 return priorityFunctions[index];
             else
                 setting.runStacks();
+			
             return null;
         }, this.runThenFunction);
-        //first().then(function (result) {
-
-        //});
-        //for (var i = 0; i < priorityFunctions.length; i++) {
-        //    var result = await priorityFunctions[i]();
-        //}
         return true;
     }
 
-    this.runThenFunction = function (func, getNewFunc, thenFun) {
+    this.runThenFunction = function (func,complete, getNewFunc, thenFun) {
         var p = func();
         p.then(function (result) {
             var newfunc = getNewFunc(func);
             if (newfunc != null)
-                thenFun(newfunc, getNewFunc, thenFun);
+                thenFun(newfunc,complete, getNewFunc, thenFun);
+			else
+				complete();
         });
     };
 

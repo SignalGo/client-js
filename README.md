@@ -6,42 +6,51 @@ signalGo client version for .Net framework
 
 SignalGo is a library for Cross-Platform developers that makes it incredibly simple to add real-time web functionality to your applications. What is "real-time web" functionality? It's the ability to have your server-side code push content to the connected clients as it happens, in real-time. like WCF and SignalR
 
-##Features:
+## Features:
   1. Send and receive any data like class,object,parameters,methods,return types
   2. Return data from a method (client and server)
-
+  3. Support priority system
+  4. Support $id and $ref for json and objects
+  5. Auto Reconnect
 and other fetures...
 
-###Quick Usage JavaScript Client-Side:
+### Quick Usage JavaScript Client-Side:
 
 ```js
-    function Test() {
-    var provider = new ClientProvider();
-    provider.Connect('ws://localhost:5648/FamilyDeskServices', provider, function () {
-        provider.RegisterService("FamilyDeskService", function (service) {
-            //call server SendMessage method by two parameters
-            service.Send("SendMessage", { Text: "ali" }, new Array(), function (value) {
-                console.log("send message ok");
+         var provider = new ClientProvider();
+        var service;
+        var setting = new ConnectionSettings();
+        provider.InitializeConnectionSettings(setting);
+        setting.addPriorityFunction(function () {
+            return provider.RegisterService('ServiceName', ['HelloWorld', 'Sum'], function (providerService) {
+                service = providerService;
             });
-            console.log("register method called");
         });
-
-        var callback = provider.RegisterCallbackSerice("FamilyDeskCallback");
-
+        setting.addPriorityFunction(function () {
+            return service.HelloWorld("ali", function (x) {
+                console.log(x);
+            });
+        });
+        setting.addPriorityFunction(function () {
+            return service.Sum(11, 12, function (x) {
+                console.log(x);
+            });
+        });
+        provider.Connect('ws://localhost:9752/SignalGoTestService', provider, function () {
+        });
+        var callback = provider.RegisterCallbackService("CallbackServiceName");
         callback.ReceivedMessage = function (response) {
-            console.log("ReceivedMessage is called");
+            console.log("ReceivedMessage is called: " + response);
         };
-        callback.Test = function (a,b) {
-            console.log("Test is called");
-            //if you want return value to server
-            return 556;
-        };
-    });
 
 }
 
 ```
-##Install package from nuget:
+
+# Full Sample: 
+https://github.com/SignalGo/client-js/blob/master/index.html
+
+## Install package from nuget:
 
 Install-Package SignalGo.JavaScript.Client
 
