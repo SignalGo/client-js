@@ -141,7 +141,7 @@ function ClientProvider() {
         socket.binaryType = "arraybuffer";
         socket.onopen = function () {
             // Web Socket is connected, send data using send()
-            currentProvider.ConnectData(result.absoluteUrl);
+            //currentProvider.ConnectData(result.absoluteUrl);
 
             // if(connectionSettings) {
             //   connectionSettings.runPriorityFunctions();
@@ -221,7 +221,7 @@ function ClientProvider() {
         currentConnectionSettings = setting;
     };
     this.RegisterService = function (serviceName, functionNames, completeAction) {
-        var call = GenerateCallInfo(generateUUID(), serviceName, "/RegisterService", null, null);
+        //var call = GenerateCallInfo(generateUUID(), serviceName, "/RegisterService", null, null);
         listOfServices[serviceName] = {
             _SignalGoSend: function (items) {
                 var methodName = items[0];
@@ -238,7 +238,6 @@ function ClientProvider() {
                 listOfMethodCallGuids[call.Guid] = {
                     call: call,
                     func: null,
-                    isRegister: false,
                     serviceName: serviceName
                 };
                 var isAsync = isFunction(items[items.length - 1]);
@@ -271,19 +270,7 @@ function ClientProvider() {
 
 
         listOfServices[serviceName].ServiceName = serviceName;
-        var callServerMethod = this.CallServerMethod;
-        return new Promise(function (resolve, reject) {
-            listOfMethodCallGuids[call.Guid] = {
-                call: call,
-                isRegister: true,
-                serviceName: serviceName
-            };
-            listOfMethodCallGuids[call.Guid].func = function (service) {
-                completeAction(service);
-                resolve(service);
-            };
-            callServerMethod(call);
-        });
+        return listOfServices[serviceName];
     }
 
     this.RegisterCallbackService = function (serviceName) {
@@ -314,9 +301,8 @@ function ClientProvider() {
 
 
             var call = listOfMethodCallGuids[obj.Guid];
-            if (call.isRegister !== undefined && call.isRegister)
-                call.func(listOfServices[call.serviceName]);
-            else if (call.func != null && obj.Data != null)
+            call.func(listOfServices[call.serviceName]);
+            if (call.func != null && obj.Data != null)
                 call.func(new jsonHelper().CleanJsonReferences(JSON.parse(obj.Data)));
             listOfMethodCallGuids[obj.Guid] = null;
 
