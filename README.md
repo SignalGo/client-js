@@ -16,27 +16,43 @@ and other fetures...
 
 ```js
     function Test() {
-    var provider = new ClientProvider();
-    provider.Connect('ws://localhost:5648/FamilyDeskServices', provider, function () {
-        provider.RegisterService("FamilyDeskService", function (service) {
-            //call server SendMessage method by two parameters
-            service.Send("SendMessage", { Text: "ali" }, new Array(), function (value) {
-                console.log("send message ok");
+        var provider = new ClientProvider();
+       
+        var setting = new ConnectionSettings();
+
+        provider.InitializeConnectionSettings(setting);
+		var service = provider.RegisterService('HealthFamilyService', ['HelloWorld', 'Sum']);
+		//priority functions always run after connect before call anything
+		//this help you for login method etc
+        setting.addPriorityFunction(function () {
+            return service.HelloWorld("ali", function (x) {
+                console.log("priority: " + x);
             });
-            console.log("register method called");
+        });
+        setting.addPriorityFunction(function () {
+            return service.Sum(11, 12, function (x) {
+                console.log("priority: " + x);
+            });
         });
 
-        var callback = provider.RegisterCallbackSerice("FamilyDeskCallback");
+        provider.Connect('ws://localhost:9752/SignalGoTestService', provider, function () {
+			//after connect
+			//HealthFamilyService is your service name and HelloWorld and Sum is your service methods
+			
+			service.HelloWorld("ali", function (x) {
+					console.log(x);
+			});
+        });
+		
 
-        callback.ReceivedMessage = function (response) {
-            console.log("ReceivedMessage is called");
+		//HealthFamilyClientService is your client service servicename
+        var callback = provider.RegisterCallbackService("HealthFamilyClientService");
+		//ReceivedMessage is your method name and name , family is your method parameters
+        callback.ReceivedMessage = function (name,family) {
+            console.log("ReceivedMessage is called: name=" + name + " family="+family);
+			//result of your client method to server
+			return "welcome to client method!";
         };
-        callback.Test = function (a,b) {
-            console.log("Test is called");
-            //if you want return value to server
-            return 556;
-        };
-    });
 
 }
 
