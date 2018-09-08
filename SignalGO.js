@@ -191,7 +191,13 @@ function ClientProvider() {
                 missed_ping_pongs = 0;
             }
             else {
-                currentProvider.GenerateResponseCall(evt.data);
+				if (evt.data instanceof ArrayBuffer)
+				{
+					var decode = new TextDecoder();
+					currentProvider.GenerateResponseCall(decode.decode(evt.data));
+				}
+				else
+					currentProvider.GenerateResponseCall(evt.data);
             }
             return false;
         };
@@ -400,7 +406,7 @@ function ClientProvider() {
         socket.send(bytearray.buffer);
 
 
-        socket.send(json);
+        socket.send(json+"#end");
     }
 
     this.GenerateParts = function (data) {
