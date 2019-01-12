@@ -11,21 +11,16 @@
         var setting = new ConnectionSettings();
 
         provider.InitializeConnectionSettings(setting);
-		var service = provider.RegisterService('HealthFamilyService', ['HelloWorld', 'Sum']);
+		var service = provider.RegisterService('HelloWorld', ['Hello', 'CallClientService']);
 		//priority functions always run after connect before call anything
 		//this help you for login method etc
         setting.addPriorityFunction(function () {
-            return service.HelloWorld("ali", function (x) {
-                console.log("priority: " + x);
+            return service.Hello(function (x) {
+                console.log("priority hello: " + x);
             });
         });
-        setting.addPriorityFunction(function () {
-            return service.Sum(11, 12, function (x) {
-                console.log("priority: " + x);
-            });
-        });
-
-        provider.Connect('ws://localhost:9752/SignalGoTestService', provider, function () {
+		
+        provider.Connect('ws://localhost:9674/SignalGoTestService', provider, function () {
 			//after connect
 			//HealthFamilyService is your service name and HelloWorld and Sum is your service methods
 			
@@ -35,14 +30,18 @@
         });
 		
 
-		//HealthFamilyClientService is your client service servicename
-        var callback = provider.RegisterCallbackService("HealthFamilyClientService");
+		//HelloCallback is your client service servicename
+        var callback = provider.RegisterCallbackService("HelloCallback");
 		//ReceivedMessage is your method name and name , family is your method parameters
         callback.ReceivedMessage = function (name,family) {
             console.log("ReceivedMessage is called: name=" + name + " family="+family);
 			//result of your client method to server
 			return "welcome to client method!";
         };
+	    service.CallClientService("ali", "yousefi", function (x) {
+                console.log("priority CallClientService: " + x);
+            });
+
     </script>
 </body>
 </html>

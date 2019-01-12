@@ -127,7 +127,7 @@ function ClientProvider() {
         socket.close();
     };
 
-    this.Connect = function (url, provider, onConnect, onError, onClose, enablePingPong = false, pingPongTime = 3000, isAutoReconnect = true) {
+    this.Connect = function (url, provider, onConnect, onError, onClose, enablePingPong = false, pingPongTime = 3000, isAutoReconnect = false) {
         var result = toAbsoluteURL(url);
 
         currentProvider = provider;
@@ -225,6 +225,7 @@ function ClientProvider() {
         currentConnectionSettings = setting;
     };
     this.RegisterService = function (serviceName, functionNames, completeAction) {
+		serviceName = serviceName.toLowerCase() + "serverservice";
         //var call = GenerateCallInfo(generateUUID(), serviceName, "/RegisterService", null, null);
         listOfServices[serviceName] = {
             _SignalGoSend: function (items) {
@@ -280,6 +281,7 @@ function ClientProvider() {
     }
 
     this.RegisterCallbackService = function (serviceName) {
+		serviceName = serviceName.toLowerCase();
         listOfCallbackServices[serviceName] = {};
         return listOfCallbackServices[serviceName];
     }
@@ -324,6 +326,13 @@ function ClientProvider() {
                     return;
             }
             var service = listOfCallbackServices[obj.ServiceName];
+			var serviceIndex = obj.ServiceName.lastIndexOf("clientservice");
+			if (service == undefined && serviceIndex > 0)
+			{
+				var serviceName = obj.ServiceName.substr(0,serviceIndex);
+				service = listOfCallbackServices[serviceName.toLowerCase()];
+			}
+				
             for (var method in service) {
                 if (isFunction(service[method])) {
                     if (method == obj.MethodName) {
