@@ -159,9 +159,7 @@ function ClientProvider() {
                         if (missed_ping_pongs >= 3)
                             throw new Error("Too many missed ping_pongs.");
 
-                        var bytearray = new Uint8Array(1);
-                        bytearray[0] = 5;
-                        socket.send(bytearray.buffer);
+                        socket.send("5");
                         console.warn("sent ping pong");
                     } catch (e) {
                         clearInterval(ping_pong_interval);
@@ -296,7 +294,7 @@ function ClientProvider() {
         var dataType = data.substring(0, data.indexOf("/"));
         var splitDataType = dataType.split(",");
         if (splitDataType[0] == 2) {
-            var json = data.substring(data.indexOf("/") + 1);
+            var json = data.substring(data.indexOf("/") + 1, data.length - 4);
             var obj = new jsonHelper().CleanJsonReferences(JSON.parse(json));
             if (obj.PartNumber != undefined && obj.PartNumber != 0) {
 
@@ -316,7 +314,7 @@ function ClientProvider() {
 
 
         } else if (splitDataType[0] == 1) {
-            var json = data.substring(data.indexOf("/") + 1);
+            var json = data.substring(data.indexOf("/") + 1, data.length - 4);
             var obj = new jsonHelper().CleanJsonReferences(JSON.parse(json));
             if (obj.PartNumber != undefined && obj.PartNumber != 0) {
                 var mix = this.GenerateAndMixSegments(obj);
@@ -406,14 +404,7 @@ function ClientProvider() {
     this.SendCallbackToServer = function (callBackInfo) {
         var json = JSON.stringify(callBackInfo);
 
-        var bytearray = new Uint8Array(1);
-        bytearray[0] = 2;
-        socket.send(bytearray.buffer);
-
-        var bytearray = new Uint8Array(1);
-        bytearray[0] = 0;
-        socket.send(bytearray.buffer);
-
+        json="2,0/"+json;
 
         socket.send(json+"#end");
     }
@@ -456,13 +447,7 @@ function ClientProvider() {
     this.SendMethodToServer = function (methodCalInfo) {
         var json = JSON.stringify(methodCalInfo);
         json += "#end";
-        var bytearray = new Uint8Array(1);
-        bytearray[0] = 1;
-        socket.send(bytearray.buffer);
-
-        var bytearray = new Uint8Array(1);
-        bytearray[0] = 0;
-        socket.send(bytearray.buffer);
+		json = "1,0/" + json;
         //console.log(json.length);
         socket.send(json);
     }
